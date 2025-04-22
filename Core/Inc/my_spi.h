@@ -17,9 +17,13 @@
 HAL_StatusTypeDef read_device_id(char *read_buffer,XSPI_HandleTypeDef *octo_spi_handle);
 HAL_StatusTypeDef read_electronic_signature(char *read_buffer,XSPI_HandleTypeDef *octo_spi_handle);
 
+HAL_StatusTypeDef read_page(char *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef write_page(char *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef erase_sector(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+
 //Commands
 //Array access
-#define MY_READ 			(0x03) // Normal read op.
+#define MY_READ 			(0x03U) // Normal read op.
 #define MY_FAST_READ 		(0x0B) // fast read op.
 #define MY_2READ			(0xBB) // 2 I/O read.
 #define MY_DREAD			(0x3B) // 1I 2O read.
@@ -79,6 +83,9 @@ HAL_StatusTypeDef read_electronic_signature(char *read_buffer,XSPI_HandleTypeDef
 #define INST_2_WIRES HAL_XSPI_INSTRUCTION_2_LINES
 #define INST_4_WIRES HAL_XSPI_INSTRUCTION_4_LINES
 
+//Instruction width
+#define INST_LEN_1_BYTE  HAL_XSPI_INSTRUCTION_8_BITS
+#define INST_LEN_2_BYTES HAL_XSPI_INSTRUCTION_16_BITS
 // Number of address wires.
 #define ADDR_NONE    HAL_XSPI_ADDRESS_NONE
 #define ADDR_1_WIRE  HAL_XSPI_ADDRESS_1_LINE
@@ -99,6 +106,12 @@ HAL_StatusTypeDef read_electronic_signature(char *read_buffer,XSPI_HandleTypeDef
 #define PAGE_SIZE   	256
 #define HALF_BLOCK_SIZE 32000
 #define BLOCK_SIZE		64000
+
+// Dummy Bytes.
+#define DUMMY_0 0
+#define DUMMY_1 8
+#define DUMMY_2 16
+#define DUMMY_3 24
 
 // Time
 #define ONE_MINUTE 60000

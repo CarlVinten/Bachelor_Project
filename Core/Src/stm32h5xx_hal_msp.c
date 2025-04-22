@@ -109,14 +109,14 @@ void HAL_XSPI_MspInit(XSPI_HandleTypeDef* hxspi)
     PC2     ------> OCTOSPI1_IO2
     PC3     ------> OCTOSPI1_IO0
     PA1     ------> OCTOSPI1_IO3
-    PB0     ------> OCTOSPI1_IO1
     PB2     ------> OCTOSPI1_CLK
     PB10     ------> OCTOSPI1_NCS
+    PC10     ------> OCTOSPI1_IO1
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
+    GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_10;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF9_OCTOSPI1;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
@@ -127,17 +127,10 @@ void HAL_XSPI_MspInit(XSPI_HandleTypeDef* hxspi)
     GPIO_InitStruct.Alternate = GPIO_AF9_OCTOSPI1;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_0;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF6_OCTOSPI1;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
     GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_10;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF9_OCTOSPI1;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
@@ -169,15 +162,15 @@ void HAL_XSPI_MspDeInit(XSPI_HandleTypeDef* hxspi)
     PC2     ------> OCTOSPI1_IO2
     PC3     ------> OCTOSPI1_IO0
     PA1     ------> OCTOSPI1_IO3
-    PB0     ------> OCTOSPI1_IO1
     PB2     ------> OCTOSPI1_CLK
     PB10     ------> OCTOSPI1_NCS
+    PC10     ------> OCTOSPI1_IO1
     */
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_2|GPIO_PIN_3);
+    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_10);
 
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1);
 
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_0|GPIO_PIN_2|GPIO_PIN_10);
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_2|GPIO_PIN_10);
 
     /* USER CODE BEGIN OCTOSPI1_MspDeInit 1 */
 

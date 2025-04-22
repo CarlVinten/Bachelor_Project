@@ -1,2 +1,4 @@
 ../Core/Src/my_hal.c:13:6:uart_print	1
-../Core/Src/my_hal.c:19:6:get_HAL_error	5
+../Core/Src/my_hal.c:19:6:get_HAL_error	6
+../Core/Src/my_hal.c:48:6:fill_page_buffer_1	2
+../Core/Src/my_hal.c:55:6:fill_page_buffer_2	2
