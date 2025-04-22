@@ -37,9 +37,9 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define READ_DEVICE_INFO 1
-//#define WRITE_READ_SEQ_1 1
-//#define WRITE_READ_SEQ_2 1
+//#define READ_DEVICE_INFO
+#define WRITE_READ_SEQ_1
+//#define WRITE_READ_SEQ_2
 
 /* USER CODE END PD */
 
@@ -81,15 +81,15 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-#ifdef READ_WRITE_SEQ_1
-	char *spi_buf_1 = malloc(257 * sizeof(char));
+#ifdef WRITE_READ_SEQ_1
+	char spi_read_buffer_1[257];
+	char spi_write_buffer_1[257];
 #endif
 #ifdef READ_WRITE_SEQ_2
 	char *spi_buf_2 = malloc(4 * sizeof(char));
 #endif
-	uint8_t uart_buf[16];
+	uint8_t uart_buf[257];
 	uint8_t spi_buf[16];
-	char *dummy_buf = malloc(16 * sizeof(char));
 	HAL_StatusTypeDef octo_spi_return = HAL_OK;
 	XSPI_RegularCmdTypeDef spi_command = {
 			.OperationType         = HAL_XSPI_OPTYPE_COMMON_CFG,
@@ -143,7 +143,6 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uart_print(uart_buf, "Initializing\r\n", &huart2);
-  HAL_Delay(5000);
 
   if(hospi1.State == HAL_XSPI_STATE_READY){
 	  uart_print(uart_buf, "HAL OK\r\n", &huart2);
@@ -158,17 +157,11 @@ int main(void)
   uart_print(uart_buf, "Cmd Init\r\n", &huart2);
   get_HAL_error(octo_spi_return, &huart2);*/
 
-  int j = 0;
   strcpy((char *)spi_buf, "AAAAAAAAAAAAAAA");
 
   while (1)
   {
-	  j++;
-	  	  if(j == 5){
-	  		  j = 0;
-	  		  uart_print(uart_buf, "...\r\n", &huart2);
-	  	  }
-	 /* while(1){
+	  	  /* while(1){
 
 	  octo_spi_return = HAL_XSPI_Command(&hospi1, &spi_command, 60000);
 
@@ -183,12 +176,24 @@ int main(void)
 	  //uart_print(uart_buf, (char *)dummy_buf, &huart2);
 	  //HAL_Delay(1000);
 #ifdef WRITE_READ_SEQ_1
+	  for(char write_character = 0x01; write_character < 256; write_character++){
+	  fill_page_buffer_2(spi_write_buffer_1);
+	  uint32_t address = 0x000fff;
+	  get_HAL_error(write_page(spi_write_buffer_1, &hospi1, address), &huart2);
+	  HAL_Delay(2500);
+	  get_HAL_error(read_page(spi_read_buffer_1, &hospi1, address), &huart2);
+	  HAL_Delay(2500);
+	  uart_print(uart_buf, spi_read_buffer_1, &huart2);
+	  get_HAL_error(erase_sector(&hospi1, address), &huart2);
+	  HAL_Delay(2500);
+	  }
 
 #endif
 #ifdef READ_DEVICE_INFO // Code for reading device id
 	  uart_print(uart_buf, "\r\nSignature\r\n", &huart2);
 	  octo_spi_return = read_electronic_signature((char *)spi_buf, &hospi1);
 	  get_HAL_error(octo_spi_return, &huart2);
+	  HAL_Delay(5000);
 	  uart_print(uart_buf, "\r\nDevice_id\r\n", &huart2);
 	  octo_spi_return = read_device_id((char *)spi_buf, &hospi1);
 	  get_HAL_error(octo_spi_return, &huart2);
@@ -196,7 +201,7 @@ int main(void)
 #endif
 	  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 	  //hospi1.State = HAL_XSPI_STATE_CMD_CFG;
-	  HAL_Delay(1000);
+	  HAL_Delay(5000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -349,6 +354,7 @@ static void MX_USART2_UART_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
 
   /* USER CODE END MX_GPIO_Init_1 */
@@ -357,6 +363,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PA5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

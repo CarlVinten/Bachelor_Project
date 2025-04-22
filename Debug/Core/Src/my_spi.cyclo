@@ -1,4 +1,6 @@
 ../Core/Src/my_spi.c:14:6:set_spi_command	1
-../Core/Src/my_spi.c:57:19:write_data	1
-../Core/Src/my_spi.c:63:19:read_device_id	2
-../Core/Src/my_spi.c:79:19:read_electronic_signature	2
+../Core/Src/my_spi.c:59:19:read_device_id	2
+../Core/Src/my_spi.c:75:19:read_electronic_signature	2
+../Core/Src/my_spi.c:92:19:read_page	2
+../Core/Src/my_spi.c:107:19:write_page	4
+../Core/Src/my_spi.c:135:19:erase_sector	2
