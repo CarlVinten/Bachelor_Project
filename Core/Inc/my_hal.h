@@ -12,7 +12,7 @@
 #include "my_spi.h"
 
 #define HUART_DEBUG 1
-#define LED_DEBUG   1
+//#define LED_DEBUG   1
 
 void uart_print(uint8_t *buf, char *text, UART_HandleTypeDef * husart);
 void get_HAL_error(HAL_StatusTypeDef return_value, UART_HandleTypeDef * husart);

@@ -43,18 +43,6 @@ void set_spi_command(XSPI_RegularCmdTypeDef *command_struct, uint32_t instructio
 	command_struct->SIOOMode 			  = HAL_XSPI_SIOO_INST_EVERY_CMD;		// Constant - IDK
 }
 
-/*HAL_StatusTypeDef write_page_SPI(uint8_t* write_buffer,XSPI_HandleTypeDef octo_handle){
-	// set spi command
-	XSPI_RegularCmdTypeDef spi_command;
-	set_spi_command(&spi_command, )
-	//write enable
-
-	//Write command
-
-	//write
-}*/
-
-
 
 HAL_StatusTypeDef read_device_id(char *read_buffer,XSPI_HandleTypeDef *octo_spi_handle){
 	// Set command.
@@ -88,37 +76,40 @@ HAL_StatusTypeDef read_electronic_signature(char *read_buffer,XSPI_HandleTypeDef
 	return octo_spi_return;
 }
 
+///////////////////////// Other functions /////////////////////////
+HAL_StatusTypeDef write_enable(XSPI_HandleTypeDef *octo_spi_handle, XSPI_RegularCmdTypeDef *spi_command){
+	set_spi_command(spi_command, MY_WREN, INST_LEN_1_BYTE, INST_1_WIRE, ADDR_NONE, 0, DATA_NONE, 0, DUMMY_0);
+	return HAL_XSPI_Command(octo_spi_handle, spi_command, ONE_MINUTE);
+}
+
+
+
+///////////////////////// Single SPI /////////////////////////
 // Read page
 HAL_StatusTypeDef read_page(char *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address){
 	HAL_StatusTypeDef octo_spi_return;
 	XSPI_RegularCmdTypeDef spi_command;
 	//Set spi command
-	set_spi_command(&spi_command, MY_READ, INST_LEN_1_BYTE, INST_1_WIRE, address, ADDR_1_WIRE, DATA_1_WIRE, PAGE_SIZE, DUMMY_0);
+	set_spi_command(&spi_command, MY_READ, INST_LEN_1_BYTE, INST_1_WIRE, address, ADDR_1_WIRE, DATA_1_WIRE, 24, DUMMY_0);
 	octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
 	if(octo_spi_return != HAL_OK){
 			return octo_spi_return;
 	}
 	octo_spi_return = HAL_XSPI_Receive(octo_spi_handle, (uint8_t *) read_buffer, ONE_MINUTE);
-	read_buffer[PAGE_SIZE] = '\0';
+	read_buffer[24] = '\0';
 	return octo_spi_return;
 }
 
 // Write page
 HAL_StatusTypeDef write_page(char *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address){
-	char WREN_BUF[] = {MY_WREN, '\0'};
 	HAL_StatusTypeDef octo_spi_return;
 	XSPI_RegularCmdTypeDef spi_command;
-	//Set spi command - Write enable
-	set_spi_command(&spi_command, MY_WREN, INST_LEN_1_BYTE, INST_1_WIRE, ADDR_NONE, 0x00, DATA_NONE, ONE_BYTE, DUMMY_0);
-	octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
+
+	octo_spi_return = write_enable(octo_spi_handle, &spi_command);
 	if(octo_spi_return != HAL_OK){
 			return octo_spi_return;
 	}
-
-	octo_spi_return = HAL_XSPI_Transmit(octo_spi_handle, (uint8_t *) WREN_BUF, ONE_MINUTE);
-	if(octo_spi_return != HAL_OK){
-				return octo_spi_return;
-	}
+	HAL_Delay(2500);
 
 	set_spi_command(&spi_command, MY_PP, INST_LEN_1_BYTE, INST_1_WIRE, address, ADDR_1_WIRE, DATA_1_WIRE, PAGE_SIZE, DUMMY_0);
 	octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
@@ -133,19 +124,46 @@ HAL_StatusTypeDef write_page(char *write_buffer, XSPI_HandleTypeDef *octo_spi_ha
 
 // Erase page
 HAL_StatusTypeDef erase_sector(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address){
-	char *empty_buffer = "";
 	HAL_StatusTypeDef octo_spi_return;
 	XSPI_RegularCmdTypeDef spi_command;
-	set_spi_command(&spi_command, (uint16_t)(MY_SE + (MY_WREN << 8)), INST_LEN_2_BYTES, INST_1_WIRE, address, ADDR_1_WIRE, DATA_NONE, DATA_NONE, DUMMY_0);
-	octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
-		if(octo_spi_return != HAL_OK){
+
+	write_enable(octo_spi_handle, &spi_command);
+	if(octo_spi_return != HAL_OK){
 			return octo_spi_return;
-		}
+	}
 
-	octo_spi_return = HAL_XSPI_Transmit(octo_spi_handle, (uint8_t *) empty_buffer, ONE_MINUTE);
-	return octo_spi_return;
-
+	HAL_Delay(2500);
+	set_spi_command(&spi_command, MY_SE, INST_LEN_1_BYTE, INST_1_WIRE, address, ADDR_1_WIRE, DATA_NONE, DATA_NONE, DUMMY_0);
+	octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
+		return octo_spi_return;
 }
+
+
+
+
+///////////////////////// Dual SPI /////////////////////////
+HAL_StatusTypeDef dual_read(char *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address){
+	HAL_StatusTypeDef octo_spi_return;
+	XSPI_RegularCmdTypeDef spi_command;
+
+	set_spi_command(&spi_command, MY_2READ, INST_LEN_1_BYTE, INST_1_WIRE, address, ADDR_2_WIRES, DATA_2_WIRES, 24, DUMMY_4);
+	octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
+	if(octo_spi_return != HAL_OK){
+			return octo_spi_return;
+	}
+	octo_spi_return = HAL_XSPI_Receive(octo_spi_handle, (uint8_t *) read_buffer, ONE_MINUTE);
+	read_buffer[24] = '\0';
+	return octo_spi_return;
+}
+
+
+
+///////////////////////// Quad SPI /////////////////////////
+
+
+
+
+
 
 
 

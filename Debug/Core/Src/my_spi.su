@@ -1,6 +1,7 @@
 ../Core/Src/my_spi.c:14:6:set_spi_command	24	static
-../Core/Src/my_spi.c:59:19:read_device_id	128	static
-../Core/Src/my_spi.c:75:19:read_electronic_signature	128	static
-../Core/Src/my_spi.c:92:19:read_page	136	static
-../Core/Src/my_spi.c:107:19:write_page	136	static
-../Core/Src/my_spi.c:135:19:erase_sector	128	static
+../Core/Src/my_spi.c:46:6:set_spi_autopolling	16	static
+../Core/Src/my_spi.c:66:19:read_device_id	128	static
+../Core/Src/my_spi.c:82:19:read_electronic_signature	128	static
+../Core/Src/my_spi.c:99:19:read_page	136	static
+../Core/Src/my_spi.c:114:19:write_page	136	static
+../Core/Src/my_spi.c:138:19:erase_sector	128	static

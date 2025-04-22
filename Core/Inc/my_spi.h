@@ -19,6 +19,10 @@ HAL_StatusTypeDef read_electronic_signature(char *read_buffer,XSPI_HandleTypeDef
 
 HAL_StatusTypeDef read_page(char *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
 HAL_StatusTypeDef write_page(char *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+
+HAL_StatusTypeDef dual_read(char *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef dual_write(char *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+
 HAL_StatusTypeDef erase_sector(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
 
 //Commands

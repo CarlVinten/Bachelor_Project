@@ -37,8 +37,10 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-//#define READ_DEVICE_INFO
-#define WRITE_READ_SEQ_1
+#define READ_DEVICE_INFO
+#define WRITE_READ_SEQ_SINGLE_1
+#define WRITE_READ_SEQ_DUAL_1
+#define WRITE_READ_SEQ_QUAD_1
 //#define WRITE_READ_SEQ_2
 
 /* USER CODE END PD */
@@ -91,29 +93,6 @@ int main(void)
 	uint8_t uart_buf[257];
 	uint8_t spi_buf[16];
 	HAL_StatusTypeDef octo_spi_return = HAL_OK;
-	XSPI_RegularCmdTypeDef spi_command = {
-			.OperationType         = HAL_XSPI_OPTYPE_COMMON_CFG,
-			.IOSelect 		       = HAL_XSPI_SELECT_IO_3_0,
-			.Instruction	       = 0xFE,
-			.InstructionMode	   = HAL_XSPI_INSTRUCTION_1_LINE,
-			.InstructionWidth 	   = HAL_XSPI_INSTRUCTION_8_BITS,
-			.InstructionDTRMode    = HAL_XSPI_INSTRUCTION_DTR_DISABLE,
-			.Address 			   = 0x7FFFFF,
-			.AddressMode           = HAL_XSPI_ADDRESS_1_LINE,
-			.AddressWidth          = HAL_XSPI_ADDRESS_24_BITS,
-			.AddressDTRMode        = HAL_XSPI_ADDRESS_DTR_DISABLE,
-			.AlternateBytes        = 0,
-			.AlternateBytesMode    = HAL_XSPI_ALT_BYTES_NONE,
-			.AlternateBytesWidth   = HAL_XSPI_ALT_BYTES_32_BITS,
-			.AlternateBytesDTRMode = HAL_XSPI_ALT_BYTES_DTR_DISABLE,
-			.DataMode 			   = HAL_XSPI_DATA_1_LINE,
-			.DataLength 		   = 1,
-			.DataDTRMode 		   = HAL_XSPI_DATA_DTR_DISABLE,
-			.DummyCycles 		   = 0,
-			.DQSMode 			   = HAL_XSPI_DQS_DISABLE,
-			.SIOOMode 			   = HAL_XSPI_SIOO_INST_ONLY_FIRST_CMD
-
-	};
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -175,18 +154,29 @@ int main(void)
 	  //dummy_buf = itoa(HAL_XSPI_GetState(&hospi1), (char *)dummy_buf, 1);
 	  //uart_print(uart_buf, (char *)dummy_buf, &huart2);
 	  //HAL_Delay(1000);
-#ifdef WRITE_READ_SEQ_1
+#ifdef WRITE_READ_SEQ_SINGLE_1
 	  for(char write_character = 0x01; write_character < 256; write_character++){
-	  fill_page_buffer_2(spi_write_buffer_1);
-	  uint32_t address = 0x000fff;
+	  fill_page_buffer_1(write_character, spi_write_buffer_1);
+	  uint32_t address = 0x001000;
+	  uart_print(uart_buf, "\r\nWrite\r\n", &huart2);
 	  get_HAL_error(write_page(spi_write_buffer_1, &hospi1, address), &huart2);
 	  HAL_Delay(2500);
+	  uart_print(uart_buf, "\r\nRead\r\n", &huart2);
 	  get_HAL_error(read_page(spi_read_buffer_1, &hospi1, address), &huart2);
 	  HAL_Delay(2500);
-	  uart_print(uart_buf, spi_read_buffer_1, &huart2);
+	  uart_print(uart_buf, "\r\nErase\r\n", &huart2);
 	  get_HAL_error(erase_sector(&hospi1, address), &huart2);
 	  HAL_Delay(2500);
+	  uart_print(uart_buf, "\r\nRead\r\n", &huart2);
+	  get_HAL_error(read_page(spi_read_buffer_1, &hospi1, address), &huart2);
+	  HAL_Delay(2500);
 	  }
+
+#endif
+#ifdef WRITE_READ_SEQ_DUAL_1
+
+#endif
+#ifdef WRITE_READ_SEQ_QUAD_1
 
 #endif
 #ifdef READ_DEVICE_INFO // Code for reading device id
