@@ -10,52 +10,57 @@
 
 
 
-void uart_print(uint8_t *buf, char *text, UART_HandleTypeDef * husart){
-	strcpy((char*)buf, text);
-	HAL_UART_Transmit(husart, buf, strlen((char*)buf), HAL_MAX_DELAY);
+void uart_print(uint8_t *text, UART_HandleTypeDef * husart){
+	uint32_t n = strlen((char *)text) > 31 ? 31 : strlen((char *)text);
+	HAL_UART_Transmit(husart, text, n, HAL_MAX_DELAY);
+	return;
 }
 
 
 void get_HAL_error(HAL_StatusTypeDef return_value, UART_HandleTypeDef * husart){
-#ifdef HUART_DEBUG
-	uint8_t buf[16];
 	 switch(return_value){
 		  case HAL_OK:
-			  uart_print(buf, "HAL_OK\r\n", husart);
+			  uart_print((uint8_t *)"HAL_OK\r\n", husart);
 			  break;
 		  case HAL_ERROR:
-			  uart_print(buf, "HAL ERROR\r\n", husart);
+			  uart_print((uint8_t *)"HAL ERROR\r\n", husart);
 			  break;
 		  case HAL_TIMEOUT:
-			  uart_print(buf, "HAL TIMEOUT\r\n", husart);
+			  uart_print((uint8_t *)"HAL TIMEOUT\r\n", husart);
 			  break;
 		  case HAL_BUSY:
-			  uart_print(buf, "HAL BUSY\r\n", husart);
+			  uart_print((uint8_t *)"HAL BUSY\r\n", husart);
 			  break;
 		  }
-#endif
-#ifdef LED_DEBUG
-	 	if(return_value != HAL_OK){
-	 		while(1){
-	 			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-	 			HAL_Delay(500);
-	 		}
-	 	}
-#endif
 	 return;
 }
 
-void fill_page_buffer_1(char character, char *buffer){
+void fill_page_buffer_1(uint8_t character, uint8_t *buffer){
 	for(int i = 0; i < PAGE_SIZE; i++){
 		buffer[i] = character;
 	}
 	buffer[256] = '\0';
 	return;
 }
-void fill_page_buffer_2(char *buffer){
+void fill_page_buffer_2(uint8_t *buffer){
 	for(int i = 0; i < PAGE_SIZE; i++){
 		buffer[i] = i;
 	}
 	buffer[256] = '\0';
 	return;
 }
+
+void wait_for_button(UART_HandleTypeDef * huart){
+    while(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) != GPIO_PIN_SET){}
+    while(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET){}
+	return;
+}
+
+
+
+
+
+
+
+
+

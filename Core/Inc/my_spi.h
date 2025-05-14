@@ -11,19 +11,62 @@
 
 
 #include "main.h"
+#include "my_hal.h"
 
 
 //Functions
-HAL_StatusTypeDef read_device_id(char *read_buffer,XSPI_HandleTypeDef *octo_spi_handle);
-HAL_StatusTypeDef read_electronic_signature(char *read_buffer,XSPI_HandleTypeDef *octo_spi_handle);
+HAL_StatusTypeDef read_device_id(uint8_t *read_buffer,XSPI_HandleTypeDef *octo_spi_handle);
+HAL_StatusTypeDef read_electronic_signature(uint8_t *read_buffer,XSPI_HandleTypeDef *octo_spi_handle);
+HAL_StatusTypeDef check_status_register(uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint8_t QPI_on);
 
-HAL_StatusTypeDef read_page(char *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
-HAL_StatusTypeDef write_page(char *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef read_page(uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef write_page(uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
 
-HAL_StatusTypeDef dual_read(char *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
-HAL_StatusTypeDef dual_write(char *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef dual_read(uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+
+HAL_StatusTypeDef quad_read(uint8_t * read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef quad_write(uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+
 
 HAL_StatusTypeDef erase_sector(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef chip_erase(uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, UART_HandleTypeDef *huart);
+
+HAL_StatusTypeDef flush_buffer(XSPI_HandleTypeDef *octo_spi_handle);
+HAL_StatusTypeDef reset(XSPI_HandleTypeDef *octo_spi_handle);
+HAL_StatusTypeDef set_QE(XSPI_HandleTypeDef *octo_spi_handle);
+HAL_StatusTypeDef check_QE(XSPI_HandleTypeDef *octo_spi_handle, UART_HandleTypeDef *huart);
+// Read in different modes - Five repetitions.
+HAL_StatusTypeDef test_read_n_bytes_single(uint32_t n, uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart);
+HAL_StatusTypeDef test_read_n_bytes_dual_1(uint32_t n, uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart); // Address on one line
+HAL_StatusTypeDef test_read_n_bytes_dual_2(uint32_t n, uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart); // Address on two lines
+HAL_StatusTypeDef test_read_n_bytes_quad_1(uint32_t n, uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart); // Inst on one line
+HAL_StatusTypeDef test_read_n_bytes_quad_2(uint32_t n, uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart); // Inst on four lines
+HAL_StatusTypeDef test_read_n_bytes_quad_3(uint32_t n, uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart); // Inst on four lines
+HAL_StatusTypeDef test_read_n_bytes_quad_4(uint32_t n, uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart); // Inst on four lines
+
+// Write in different modes - five repetitions.
+HAL_StatusTypeDef test_write_n_bytes_single(uint32_t n, uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart);
+HAL_StatusTypeDef test_write_n_bytes_quad_1(uint32_t n, uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart); // 1 Wire.
+HAL_StatusTypeDef test_write_n_bytes_quad_2(uint32_t n, uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart); // 4 Wires.
+
+// Erase tests
+HAL_StatusTypeDef test_page_erase(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef test_block_erase_32K(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef test_block_erase_64K(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address);
+HAL_StatusTypeDef test_chip_erase(XSPI_HandleTypeDef *octo_spi_handle);
+
+// 256 byte write - performance mode??
+
+
+// Write many times.
+
+
+
+
+
+
+
+
 
 //Commands
 //Array access
@@ -116,6 +159,10 @@ HAL_StatusTypeDef erase_sector(XSPI_HandleTypeDef *octo_spi_handle, uint32_t add
 #define DUMMY_1 8
 #define DUMMY_2 16
 #define DUMMY_3 24
+#define DUMMY_6 6
+
+#define QPI_ON  1
+#define QPI_OFF 0
 
 // Time
 #define ONE_MINUTE 60000

@@ -37,11 +37,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define READ_DEVICE_INFO
 #define WRITE_READ_SEQ_SINGLE_1
-#define WRITE_READ_SEQ_DUAL_1
-#define WRITE_READ_SEQ_QUAD_1
-//#define WRITE_READ_SEQ_2
+
 
 /* USER CODE END PD */
 
@@ -83,16 +80,9 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-#ifdef WRITE_READ_SEQ_1
-	char spi_read_buffer_1[257];
-	char spi_write_buffer_1[257];
-#endif
-#ifdef READ_WRITE_SEQ_2
-	char *spi_buf_2 = malloc(4 * sizeof(char));
-#endif
-	uint8_t uart_buf[257];
-	uint8_t spi_buf[16];
-	HAL_StatusTypeDef octo_spi_return = HAL_OK;
+	uint8_t spi_read_buffer_1[257];
+	uint8_t spi_write_buffer_1[257];
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -121,70 +111,156 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uart_print(uart_buf, "Initializing\r\n", &huart2);
+  HAL_Delay(2000);
+  uart_print((uint8_t *)"\r\nInitializing\r\n", &huart2);
 
   if(hospi1.State == HAL_XSPI_STATE_READY){
-	  uart_print(uart_buf, "HAL OK\r\n", &huart2);
+	  uart_print((uint8_t *)"HAL OK\r\n", &huart2);
   }else{
-	  uart_print(uart_buf, "HAL NOT OK\r\n", &huart2);
+	  uart_print((uint8_t *)"HAL NOT OK\r\n", &huart2);
   }
 
+  uart_print((uint8_t *) "Reset device\r\n", &huart2);
+  check_spi_return(reset(&hospi1));
 
-  //hospi1.State = HAL_XSPI_STATE_WRITE_CMD_CFG;
-  /*octo_spi_return = HAL_XSPI_Command(&hospi1, &spi_command, 60000);
+  /*uart_print((uint8_t *)"Setting QE bit \r\n", &huart2);
+  check_spi_return(set_QE(&hospi1));*/
 
-  uart_print(uart_buf, "Cmd Init\r\n", &huart2);
-  get_HAL_error(octo_spi_return, &huart2);*/
 
-  strcpy((char *)spi_buf, "AAAAAAAAAAAAAAA");
+  uint32_t address = 0x6f000;
 
   while (1)
   {
-	  	  /* while(1){
+   fill_page_buffer_1(0b01010101, spi_write_buffer_1);
+   for(address = 0xff + 1; 1; address += 8){
+      // test reading
+	//chip_erase(spi_write_buffer_1, &hospi1, &huart2);
+
+    get_HAL_error(erase_sector(&hospi1, address), &huart2);
+    get_HAL_error(test_write_n_bytes_single(16, spi_write_buffer_1, &hospi1, address, &huart2), &huart2);
+    uart_print((uint8_t *)"Flush_buffer\r\n", &huart2);
+    get_HAL_error(flush_buffer(&hospi1), &huart2);
+
+
+    get_HAL_error(test_read_n_bytes_dual_2(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
+	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
+	uart_print(spi_read_buffer_1, &huart2);
+	uart_print((uint8_t *)"\r\n", &huart2);
+	memset(spi_read_buffer_1, 0, 256);
+    get_HAL_error(test_read_n_bytes_single(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
+	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
+	uart_print(spi_read_buffer_1, &huart2);
+	uart_print((uint8_t *)"\r\n", &huart2);
+	memset(spi_read_buffer_1, 0, 256);
+	//check_spi_return(set_QE(&hospi1));
+    get_HAL_error(test_read_n_bytes_dual_1(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
+	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
+	uart_print(spi_read_buffer_1, &huart2);
+	uart_print((uint8_t *)"\r\n", &huart2);
+	memset(spi_read_buffer_1, 0, 256);
+	//check_QE(&hospi1, &huart2);
+
+   }
+
+	get_HAL_error(test_read_n_bytes_quad_4(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
+	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
+	uart_print(spi_read_buffer_1, &huart2);
+	uart_print((uint8_t *)"\r\n", &huart2);
+	memset(spi_read_buffer_1, 0, 256);
+
+	get_HAL_error(test_read_n_bytes_quad_3(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
+	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
+	uart_print(spi_read_buffer_1, &huart2);
+	uart_print((uint8_t *)"\r\n", &huart2);
+	memset(spi_read_buffer_1, 0, 256);
+
+    get_HAL_error(test_read_n_bytes_quad_1(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
+    uart_print((uint8_t *)"read from flash: \r\n", &huart2);
+   	uart_print(spi_read_buffer_1, &huart2);
+   	uart_print((uint8_t *)"\r\n", &huart2);
+   	memset(spi_read_buffer_1, 0, 256);
+    get_HAL_error(test_read_n_bytes_quad_2(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
+    uart_print((uint8_t *)"read from flash: \r\n", &huart2);
+   	uart_print(spi_read_buffer_1, &huart2);
+   	uart_print((uint8_t *)"\r\n", &huart2);
+   	memset(spi_read_buffer_1, 0, 256);
+
+    while(1){}
+      /* while(1){
 
 	  octo_spi_return = HAL_XSPI_Command(&hospi1, &spi_command, 60000);
 
-	  uart_print(uart_buf, "Cmd Init\r\n", &huart2);
+	  uart_print("Cmd Init\r\n", &huart2);
 	  get_HAL_error(octo_spi_return, &huart2);
 	  octo_spi_return = HAL_XSPI_Transmit(&hospi1, spi_buf, 5000);
 	  get_HAL_error(octo_spi_return, &huart2);
 	  HAL_Delay(1000);
 
 	  }*/
-	  //dummy_buf = itoa(HAL_XSPI_GetState(&hospi1), (char *)dummy_buf, 1);
-	  //uart_print(uart_buf, (char *)dummy_buf, &huart2);
+	  //dummy_buf = itoa(HAL_XSPI_GetState(&hospi1), (uint8_t *)dummy_buf, 1);
+	  //uart_print((uint8_t *)dummy_buf, &huart2);
 	  //HAL_Delay(1000);
 #ifdef WRITE_READ_SEQ_SINGLE_1
-	  for(char write_character = 0x01; write_character < 256; write_character++){
-	  fill_page_buffer_1(write_character, spi_write_buffer_1);
-	  uint32_t address = 0x001000;
-	  uart_print(uart_buf, "\r\nWrite\r\n", &huart2);
+	  for(uint8_t write_uint8_tacter = 0x01; write_uint8_tacter < 256; write_uint8_tacter++){
+	  fill_page_buffer_1(write_uint8_tacter, spi_write_buffer_1);
+	  uint32_t address = 0x005000;
+	  uart_print((uint8_t *)"\r\nWrite\r\n", &huart2);
 	  get_HAL_error(write_page(spi_write_buffer_1, &hospi1, address), &huart2);
 	  HAL_Delay(2500);
-	  uart_print(uart_buf, "\r\nRead\r\n", &huart2);
+	  uart_print((uint8_t *)"\r\nRead\r\n", &huart2);
 	  get_HAL_error(read_page(spi_read_buffer_1, &hospi1, address), &huart2);
 	  HAL_Delay(2500);
-	  uart_print(uart_buf, "\r\nErase\r\n", &huart2);
+	  uart_print((uint8_t *)"\r\nErase\r\n", &huart2);
 	  get_HAL_error(erase_sector(&hospi1, address), &huart2);
 	  HAL_Delay(2500);
-	  uart_print(uart_buf, "\r\nRead\r\n", &huart2);
+	  uart_print((uint8_t *)"\r\nRead\r\n", &huart2);
 	  get_HAL_error(read_page(spi_read_buffer_1, &hospi1, address), &huart2);
 	  HAL_Delay(2500);
 	  }
 
 #endif
 #ifdef WRITE_READ_SEQ_DUAL_1
-
+	  for(uint8_t write_character = 0x01; write_character < 256; write_character++){
+	  fill_page_buffer_1(write_uint8_tacter, spi_write_buffer_1);
+	  uint32_t address = 0x001000;
+	  uart_print("\r\nWrite\r\n", &huart2);
+	  get_HAL_error(dual_write(spi_write_buffer_1, &hospi1, address), &huart2);
+	  HAL_Delay(2500);
+	  uart_print("\r\nRead\r\n", &huart2);
+	  get_HAL_error(read_page(spi_read_buffer_1, &hospi1, address), &huart2);
+	  HAL_Delay(2500);
+	  uart_print("\r\nErase\r\n", &huart2);
+	  get_HAL_error(erase_sector(&hospi1, address), &huart2);
+	  HAL_Delay(2500);
+	  uart_print("\r\nRead\r\n", &huart2);
+	  get_HAL_error(read_page(spi_read_buffer_1, &hospi1, address), &huart2);
+	  HAL_Delay(2500);
+	  }
 #endif
 #ifdef WRITE_READ_SEQ_QUAD_1
-
+	  for(uint8_t write_character = 0x01; write_character < 256; write_character++){
+	  	  fill_page_buffer_1(write_character, spi_write_buffer_1);
+	  	  uint32_t address = 0x001000;
+	  	  uart_print("\r\nWrite\r\n", &huart2);
+	  	  get_HAL_error(quad_write(spi_write_buffer_1, &hospi1, address), &huart2);
+	  	  HAL_Delay(2500);
+	  	  uart_print("\r\nRead\r\n", &huart2);
+	  	  get_HAL_error(read_page(spi_read_buffer_1, &hospi1, address), &huart2);
+	  	  HAL_Delay(2500);
+	  	  uart_print("\r\nErase\r\n", &huart2);
+	  	  get_HAL_error(erase_sector(&hospi1, address), &huart2);
+	  	  HAL_Delay(2500);
+	  	  uart_print("\r\nRead\r\n", &huart2);
+	  	  get_HAL_error(read_page(spi_read_buffer_1, &hospi1, address), &huart2);
+	  	  HAL_Delay(2500);
+	  	  }
 #endif
 #ifdef READ_DEVICE_INFO // Code for reading device id
-	  uart_print(uart_buf, "\r\nSignature\r\n", &huart2);
+	  uart_print("\r\nSignature\r\n", &huart2);
 	  octo_spi_return = read_electronic_signature((char *)spi_buf, &hospi1);
 	  get_HAL_error(octo_spi_return, &huart2);
 	  HAL_Delay(5000);
-	  uart_print(uart_buf, "\r\nDevice_id\r\n", &huart2);
+	  uart_print("\r\nDevice_id\r\n", &huart2);
 	  octo_spi_return = read_device_id((char *)spi_buf, &hospi1);
 	  get_HAL_error(octo_spi_return, &huart2);
 
@@ -219,7 +295,7 @@ void SystemClock_Config(void)
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV2;
+  RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -233,19 +309,19 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                               |RCC_CLOCKTYPE_PCLK3;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Configure the programming delay
   */
-  __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_0);
+  __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_1);
 }
 
 /**
@@ -356,6 +432,18 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PC13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PA5 */
   GPIO_InitStruct.Pin = GPIO_PIN_5;

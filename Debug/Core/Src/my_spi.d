@@ -26,7 +26,8 @@ Core/Src/my_spi.o: ../Core/Src/my_spi.c ../Core/Inc/my_spi.h \
  ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_ll_dlyb.h \
  ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal_uart.h \
  ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal_uart_ex.h \
- ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal_exti.h
+ ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal_exti.h \
+ ../Core/Inc/my_hal.h ../Core/Inc/my_spi.h
 ../Core/Inc/my_spi.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal.h:
@@ -57,3 +58,5 @@ Core/Src/my_spi.o: ../Core/Src/my_spi.c ../Core/Inc/my_spi.h \
 ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal_uart.h:
 ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal_uart_ex.h:
 ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal_exti.h:
+../Core/Inc/my_hal.h:
+../Core/Inc/my_spi.h:
