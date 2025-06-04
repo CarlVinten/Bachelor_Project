@@ -42,6 +42,8 @@ void set_spi_command(XSPI_RegularCmdTypeDef *command_struct, uint32_t instructio
 	// Enter number of dummy cycles.
 	command_struct->DQSMode 			  = HAL_XSPI_DQS_DISABLE;				// Constant - IDK
 	command_struct->SIOOMode 			  = HAL_XSPI_SIOO_INST_EVERY_CMD;		// Constant - IDK
+
+
 }
 
 
@@ -97,6 +99,22 @@ HAL_StatusTypeDef check_status_register(uint8_t *read_buffer, XSPI_HandleTypeDef
 	return HAL_XSPI_Receive(octo_spi_handle,  read_buffer, ONE_MINUTE);
 }
 
+HAL_StatusTypeDef check_config_register(uint8_t *read_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint8_t QPI_on, UART_HandleTypeDef *huart){
+	HAL_StatusTypeDef octo_spi_return;
+	XSPI_RegularCmdTypeDef spi_command;
+
+	if(QPI_on){
+		set_spi_command(&spi_command, MY_RDSR, INST_4_WIRES, 0x00, ADDR_NONE, DATA_4_WIRES, ONE_BYTE, DUMMY_0);
+	}else{
+		set_spi_command(&spi_command, MY_RDCR, INST_1_WIRE, 0x00, ADDR_NONE, DATA_1_WIRE, ONE_BYTE, DUMMY_0);
+	}
+	uart_print((uint8_t *)"config reg\r\n", huart);
+	wait_for_button(huart);
+	octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
+	check_spi_return(octo_spi_return);
+	return HAL_XSPI_Receive(octo_spi_handle,  read_buffer, ONE_MINUTE);
+}
+
 HAL_StatusTypeDef write_enable_with_check(XSPI_HandleTypeDef *octo_spi_handle, uint8_t QPI_on){
 	HAL_StatusTypeDef octo_spi_return;
 	XSPI_RegularCmdTypeDef spi_command;
@@ -105,11 +123,11 @@ HAL_StatusTypeDef write_enable_with_check(XSPI_HandleTypeDef *octo_spi_handle, u
 		octo_spi_return = write_enable(octo_spi_handle, &spi_command, QPI_on);
 		check_spi_return(octo_spi_return);
 		
-		HAL_DELAY_2500;
+		//HAL_DELAY_2500;
 		octo_spi_return = check_status_register(&status_reg_buffer, octo_spi_handle, QPI_on);
 		check_spi_return(octo_spi_return);
 		
-		HAL_DELAY_2500;
+		//HAL_DELAY_2500;
 	}while(!(status_reg_buffer & 0b10));
 	return octo_spi_return;
 }
@@ -118,7 +136,6 @@ HAL_StatusTypeDef write_in_progress(XSPI_HandleTypeDef *octo_spi_handle, uint8_t
 	HAL_StatusTypeDef octo_spi_return;
 	uint8_t status_reg_buffer;
 	do{
-		HAL_DELAY_2500;
 		octo_spi_return = check_status_register(&status_reg_buffer, octo_spi_handle, QPI_on);
 		check_spi_return(octo_spi_return);
 	}while((status_reg_buffer & 0b1));
@@ -157,6 +174,27 @@ HAL_StatusTypeDef set_QE(XSPI_HandleTypeDef *octo_spi_handle){
 
 		check_spi_return(check_status_register(&status_reg_buffer, octo_spi_handle, QPI_OFF));
 	}while(!(status_reg_buffer & 0b01000000));
+
+	return HAL_OK;
+}
+HAL_StatusTypeDef set_temp(XSPI_HandleTypeDef *octo_spi_handle){
+	XSPI_RegularCmdTypeDef spi_command;
+	uint8_t status_reg_buffer;
+	uint8_t quad_enable[2] = {0b00000000,0b00000001};
+
+	do{
+		check_spi_return(write_enable_with_check(octo_spi_handle, QPI_OFF));
+		HAL_DELAY_2500;
+		set_spi_command(&spi_command, MY_WRSR, INST_1_WIRE, 0x00, ADDR_NONE, DATA_1_WIRE, 2, DUMMY_0);
+		check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
+		check_spi_return(HAL_XSPI_Transmit(octo_spi_handle, quad_enable, ONE_MINUTE));
+
+		HAL_DELAY_2500;
+		set_spi_command(&spi_command, MY_RDCR, INST_1_WIRE, 0x00, ADDR_NONE, DATA_1_WIRE, 1, DUMMY_0);
+
+		check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
+		HAL_XSPI_Receive(octo_spi_handle,  &status_reg_buffer, ONE_MINUTE);
+	}while(!(status_reg_buffer & 0b00000110));
 
 	return HAL_OK;
 }
@@ -305,7 +343,7 @@ HAL_StatusTypeDef test_read_n_bytes_dual_2(uint32_t n, uint8_t *read_buffer, XSP
 	HAL_StatusTypeDef octo_spi_return;
 	XSPI_RegularCmdTypeDef spi_command;
 
-    set_spi_command(&spi_command, MY_2READ, INST_1_WIRE, address, ADDR_2_WIRES, DATA_2_WIRES, n , 4);
+    set_spi_command(&spi_command, MY_2READ, INST_1_WIRE, address, ADDR_2_WIRES, DATA_2_WIRES, n, 0);
 	octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
 	check_spi_return(octo_spi_return);
 	
@@ -389,49 +427,126 @@ HAL_StatusTypeDef test_read_n_bytes_quad_4(uint32_t n, uint8_t *read_buffer, XSP
 
 //////// WRITING ////////
 HAL_StatusTypeDef test_write_n_bytes_single(uint32_t n, uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart){
-    HAL_StatusTypeDef octo_spi_return;
     XSPI_RegularCmdTypeDef spi_command;
 
     uart_print((uint8_t *)"WREN - SPI\r\n", huart);
-    octo_spi_return = write_enable_with_check(octo_spi_handle, QPI_OFF);
-
-
-    check_spi_return(octo_spi_return);
-
+    check_spi_return(write_enable_with_check(octo_spi_handle, QPI_OFF));
 
     set_spi_command(&spi_command, MY_PP, INST_1_WIRE, address, ADDR_1_WIRE, DATA_1_WIRE, n, DUMMY_0);
-    octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
-    check_spi_return(octo_spi_return);
+    check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
 
     uart_print((uint8_t *)"Page Program - SPI\r\n", huart);
     wait_for_button(huart);
-    octo_spi_return = HAL_XSPI_Transmit(octo_spi_handle,  write_buffer, ONE_MINUTE);
-    check_spi_return(octo_spi_return);
+    check_spi_return(HAL_XSPI_Transmit(octo_spi_handle,  write_buffer, ONE_MINUTE));
 
-    octo_spi_return = write_in_progress(octo_spi_handle, QPI_OFF);
-    return octo_spi_return;
+    check_spi_return(write_in_progress(octo_spi_handle, QPI_OFF));
+    return HAL_OK;
+}
+
+HAL_StatusTypeDef test_write_n_bytes_quad_1(uint32_t n, uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart){ // 1 Wire.
+	XSPI_RegularCmdTypeDef spi_command;
+
+	uart_print((uint8_t *)"WREN - SPI\r\n", huart);
+	check_spi_return(write_enable_with_check(octo_spi_handle, QPI_OFF));
+
+	set_spi_command(&spi_command, MY_4PP, INST_1_WIRE, address, ADDR_4_WIRES, DATA_4_WIRES, n, DUMMY_0);
+	check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
+
+	uart_print((uint8_t *)"4 Page Program - SPI\r\n", huart);
+	wait_for_button(huart);
+	check_spi_return(HAL_XSPI_Transmit(octo_spi_handle,  write_buffer, ONE_MINUTE));
+
+	check_spi_return(write_in_progress(octo_spi_handle, QPI_OFF));
+	return HAL_OK;
 }
 
 
-HAL_StatusTypeDef chip_erase(uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, UART_HandleTypeDef *huart){
-    HAL_StatusTypeDef octo_spi_return;
+HAL_StatusTypeDef test_sector_erase(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart){
+	XSPI_RegularCmdTypeDef spi_command;
+
+	check_spi_return(write_enable_with_check(octo_spi_handle, QPI_OFF));
+
+	uart_print((uint8_t *)"SE - SPI\r\n", huart);
+		wait_for_button(huart);
+	set_spi_command(&spi_command, MY_SE, INST_1_WIRE, address, ADDR_1_WIRE, DATA_NONE, 0, DUMMY_0);
+	check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
+
+	check_spi_return(write_in_progress(octo_spi_handle, QPI_OFF));
+	uart_print((uint8_t *)"SE DONE\r\n", huart);
+	return HAL_OK;
+}
+
+HAL_StatusTypeDef test_block_erase_32K(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart){
+	XSPI_RegularCmdTypeDef spi_command;
+
+	uart_print((uint8_t *)"BE 32K - WREN - SPI\r\n", huart);
+	wait_for_button(huart);
+	check_spi_return(write_enable_with_check(octo_spi_handle, QPI_OFF));
+
+	set_spi_command(&spi_command, MY_BE_32K, INST_1_WIRE, address, ADDR_1_WIRE, DATA_NONE, 0, DUMMY_0);
+	check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
+
+	check_spi_return(write_in_progress(octo_spi_handle, QPI_OFF));
+	uart_print((uint8_t *)"BE 32K DONE\r\n", huart);
+	return HAL_OK;
+}
+
+HAL_StatusTypeDef test_block_erase_64K(XSPI_HandleTypeDef *octo_spi_handle, uint32_t address, UART_HandleTypeDef *huart){
+	XSPI_RegularCmdTypeDef spi_command;
+
+	uart_print((uint8_t *)"BE 64K - WREN - SPI\r\n", huart);
+	wait_for_button(huart);
+	check_spi_return(write_enable_with_check(octo_spi_handle, QPI_OFF));
+
+	set_spi_command(&spi_command, MY_BE_64K, INST_1_WIRE, address, ADDR_1_WIRE, DATA_NONE, 0, DUMMY_0);
+	check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
+
+	check_spi_return(write_in_progress(octo_spi_handle, QPI_OFF));
+	uart_print((uint8_t *)"BE 64K DONE\r\n", huart);
+	return HAL_OK;
+}
+
+HAL_StatusTypeDef test_chip_erase(XSPI_HandleTypeDef *octo_spi_handle, UART_HandleTypeDef *huart){
     XSPI_RegularCmdTypeDef spi_command;
 
-    uart_print((uint8_t *)"WREN - SPI\r\n", huart);
-    octo_spi_return = write_enable_with_check(octo_spi_handle, QPI_OFF);
-
-
-    check_spi_return(octo_spi_return);
-
-    uart_print((uint8_t *)"chip erase\r\n", huart);
+    uart_print((uint8_t *)"CHIP ERASE - WREN - SPI\r\n", huart);
     wait_for_button(huart);
+    check_spi_return(write_enable_with_check(octo_spi_handle, QPI_OFF));
+
     set_spi_command(&spi_command, MY_CE, INST_1_WIRE, 0x00, ADDR_NONE, DATA_NONE, 0, DUMMY_0);
-    octo_spi_return = HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE);
-    check_spi_return(octo_spi_return);
+    check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
 
-
-
-    octo_spi_return = write_in_progress(octo_spi_handle, QPI_OFF);
-    return octo_spi_return;
+    check_spi_return(write_in_progress(octo_spi_handle, QPI_OFF));
+    uart_print((uint8_t *)"CHIP ERASED DONE\r\n", huart);
+    return HAL_OK;
 }
+
+//
+
+HAL_StatusTypeDef write_256_bytes_single(uint8_t *write_buffer, XSPI_HandleTypeDef *octo_spi_handle, uint32_t address){
+    XSPI_RegularCmdTypeDef spi_command;
+
+    check_spi_return(write_enable_with_check(octo_spi_handle, QPI_OFF));
+
+    set_spi_command(&spi_command, MY_PP, INST_1_WIRE, address, ADDR_1_WIRE, DATA_1_WIRE, 256, DUMMY_0);
+    check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
+
+    check_spi_return(HAL_XSPI_Transmit(octo_spi_handle,  write_buffer, ONE_MINUTE));
+
+    check_spi_return(write_in_progress(octo_spi_handle, QPI_OFF));
+    return HAL_OK;
+}
+
+HAL_StatusTypeDef chip_erase(XSPI_HandleTypeDef *octo_spi_handle){
+    XSPI_RegularCmdTypeDef spi_command;
+
+    check_spi_return(write_enable_with_check(octo_spi_handle, QPI_OFF));
+
+    set_spi_command(&spi_command, MY_CE, INST_1_WIRE, 0x00, ADDR_NONE, DATA_NONE, 0, DUMMY_0);
+    check_spi_return(HAL_XSPI_Command(octo_spi_handle, &spi_command, ONE_MINUTE));
+
+    check_spi_return(write_in_progress(octo_spi_handle, QPI_OFF));
+    return HAL_OK;
+}
+
 

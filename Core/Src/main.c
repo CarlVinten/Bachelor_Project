@@ -38,7 +38,8 @@
 /* USER CODE BEGIN PD */
 
 #define WRITE_READ_SEQ_SINGLE_1
-
+#define TEST_ERASE_COMMAND
+#define TEST_READ_COMMAND
 
 /* USER CODE END PD */
 
@@ -127,52 +128,104 @@ int main(void)
   check_spi_return(set_QE(&hospi1));*/
 
 
-  uint32_t address = 0x6f000;
-
+  uint32_t address = 0x100;
   while (1)
   {
-   fill_page_buffer_1(0b01010101, spi_write_buffer_1);
-   for(address = 0xff + 1; 1; address += 8){
-      // test reading
-	//chip_erase(spi_write_buffer_1, &hospi1, &huart2);
 
-    get_HAL_error(erase_sector(&hospi1, address), &huart2);
+	  while(1){
+
+	  }
+
+#ifdef TEST_ERASE_COMMAND
+	  uart_print((uint8_t *)"Test erase commands\r\n", &huart2);
+	  fill_page_buffer_1(0b01010101, spi_write_buffer_1); // Fill page buffer
+	  get_HAL_error(chip_erase(&hospi1), &huart2);
+	  uart_print((uint8_t *)"\r\n\r\nSector erase\r\n", &huart2);
+	  address = 0;
+	  while(address < 0xfff){
+		  get_HAL_error(write_256_bytes_single(spi_write_buffer_1, &hospi1, address), &huart2);
+		  uart_print((uint8_t *) "\r\n", &huart2);
+		  address += 256;
+	  }
+	  get_HAL_error(flush_buffer(&hospi1), &huart2);
+	  address = 0;
+	  get_HAL_error(test_sector_erase(&hospi1, address, &huart2), &huart2);
+	  HAL_Delay(2000);
+	  uart_print((uint8_t *)"\r\n\r\nBlock Erase 32k\r\n", &huart2);
+	  while(address < 0x7fff){
+		  get_HAL_error(write_256_bytes_single(spi_write_buffer_1, &hospi1, address), &huart2);
+		  uart_print((uint8_t *) "\r\n", &huart2);
+		  address += 256;
+	  }
+	  get_HAL_error(flush_buffer(&hospi1), &huart2);
+	  address = 0;
+	  get_HAL_error(test_block_erase_32K(&hospi1, address, &huart2), &huart2);
+	  HAL_Delay(2000);
+	  uart_print((uint8_t *)"\r\n\r\nBlock Erase 64k\r\n", &huart2);
+	  while(address < 0xffff){
+		  get_HAL_error(write_256_bytes_single(spi_write_buffer_1, &hospi1, address), &huart2);
+			  uart_print((uint8_t *) "\r\n", &huart2);
+		  address += 256;
+	  }
+	  get_HAL_error(flush_buffer(&hospi1), &huart2);
+	  address = 0;
+	  get_HAL_error(test_block_erase_64K(&hospi1, address, &huart2), &huart2);
+	  HAL_Delay(2000);
+	  uart_print((uint8_t *)"\r\n\r\nChip Erase\r\n", &huart2);
+	  while(address < 0x7fff00){
+		  get_HAL_error(write_256_bytes_single(spi_write_buffer_1, &hospi1, address), &huart2);
+		  uart_print((uint8_t *) "\r\n", &huart2);
+		  address += 256;
+	  }
+	  get_HAL_error(flush_buffer(&hospi1), &huart2);
+	  address = 0;
+	  get_HAL_error(test_chip_erase(&hospi1, &huart2), &huart2);
+
+
+	  while(1){}
+#endif
+
+
+#ifdef TEST_WRITE_COMMAND
+	  fill_page_buffer_1(0b01010101, spi_write_buffer1);
+	  get_HAL_error(erase_sector(&hospi, address), &huart);
+	  get_HAL_error
+#endif
+
+#ifdef TEST_READ_COMMAND
+    fill_page_buffer_1(0b01010101, spi_write_buffer_1);
+	get_HAL_error(erase_sector(&hospi1, address), &huart2);
     get_HAL_error(test_write_n_bytes_single(16, spi_write_buffer_1, &hospi1, address, &huart2), &huart2);
+
     uart_print((uint8_t *)"Flush_buffer\r\n", &huart2);
     get_HAL_error(flush_buffer(&hospi1), &huart2);
-
-
-    get_HAL_error(test_read_n_bytes_dual_2(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
-	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
-	uart_print(spi_read_buffer_1, &huart2);
-	uart_print((uint8_t *)"\r\n", &huart2);
-	memset(spi_read_buffer_1, 0, 256);
     get_HAL_error(test_read_n_bytes_single(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
 	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
 	uart_print(spi_read_buffer_1, &huart2);
 	uart_print((uint8_t *)"\r\n", &huart2);
 	memset(spi_read_buffer_1, 0, 256);
-	//check_spi_return(set_QE(&hospi1));
     get_HAL_error(test_read_n_bytes_dual_1(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
 	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
 	uart_print(spi_read_buffer_1, &huart2);
 	uart_print((uint8_t *)"\r\n", &huart2);
 	memset(spi_read_buffer_1, 0, 256);
-	//check_QE(&hospi1, &huart2);
-
-   }
-
+	get_HAL_error(test_read_n_bytes_dual_2(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
+	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
+	uart_print(spi_read_buffer_1, &huart2);
+	uart_print((uint8_t *)"\r\n", &huart2);
+	memset(spi_read_buffer_1, 0, 256);
 	get_HAL_error(test_read_n_bytes_quad_4(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
 	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
 	uart_print(spi_read_buffer_1, &huart2);
 	uart_print((uint8_t *)"\r\n", &huart2);
 	memset(spi_read_buffer_1, 0, 256);
-
 	get_HAL_error(test_read_n_bytes_quad_3(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
 	uart_print((uint8_t *)"read from flash: \r\n", &huart2);
 	uart_print(spi_read_buffer_1, &huart2);
 	uart_print((uint8_t *)"\r\n", &huart2);
 	memset(spi_read_buffer_1, 0, 256);
+	while(1){}
+
 
     get_HAL_error(test_read_n_bytes_quad_1(16, spi_read_buffer_1, &hospi1, address, &huart2), &huart2);
     uart_print((uint8_t *)"read from flash: \r\n", &huart2);
@@ -185,7 +238,8 @@ int main(void)
    	uart_print((uint8_t *)"\r\n", &huart2);
    	memset(spi_read_buffer_1, 0, 256);
 
-    while(1){}
+
+#endif
       /* while(1){
 
 	  octo_spi_return = HAL_XSPI_Command(&hospi1, &spi_command, 60000);
@@ -286,18 +340,25 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLL1_SOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 2;
+  RCC_OscInitStruct.PLL.PLLN = 40;
+  RCC_OscInitStruct.PLL.PLLP = 2;
+  RCC_OscInitStruct.PLL.PLLQ = 2;
+  RCC_OscInitStruct.PLL.PLLR = 2;
+  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1_VCIRANGE_3;
+  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1_VCORANGE_WIDE;
+  RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -308,20 +369,20 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                               |RCC_CLOCKTYPE_PCLK3;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Configure the programming delay
   */
-  __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_1);
+  __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_2);
 }
 
 /**
@@ -343,13 +404,13 @@ static void MX_OCTOSPI1_Init(void)
   hospi1.Instance = OCTOSPI1;
   hospi1.Init.FifoThresholdByte = 31;
   hospi1.Init.MemoryMode = HAL_XSPI_SINGLE_MEM;
-  hospi1.Init.MemoryType = HAL_XSPI_MEMTYPE_MACRONIX;
+  hospi1.Init.MemoryType = HAL_XSPI_MEMTYPE_MICRON;
   hospi1.Init.MemorySize = HAL_XSPI_SIZE_64MB;
   hospi1.Init.ChipSelectHighTimeCycle = 1;
   hospi1.Init.FreeRunningClock = HAL_XSPI_FREERUNCLK_DISABLE;
   hospi1.Init.ClockMode = HAL_XSPI_CLOCK_MODE_0;
   hospi1.Init.WrapSize = HAL_XSPI_WRAP_NOT_SUPPORTED;
-  hospi1.Init.ClockPrescaler = 2;
+  hospi1.Init.ClockPrescaler = 1;
   hospi1.Init.SampleShifting = HAL_XSPI_SAMPLE_SHIFT_NONE;
   hospi1.Init.DelayHoldQuarterCycle = HAL_XSPI_DHQC_DISABLE;
   hospi1.Init.ChipSelectBoundary = HAL_XSPI_BONDARYOF_128MB;
@@ -427,6 +488,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
