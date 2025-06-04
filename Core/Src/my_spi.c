@@ -43,7 +43,7 @@ void set_spi_command(XSPI_RegularCmdTypeDef *command_struct, uint32_t instructio
 	command_struct->DQSMode 			  = HAL_XSPI_DQS_DISABLE;				// Constant - IDK
 	command_struct->SIOOMode 			  = HAL_XSPI_SIOO_INST_EVERY_CMD;		// Constant - IDK
 
-
+	return;
 }
 
 
